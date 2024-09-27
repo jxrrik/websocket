@@ -1,7 +1,7 @@
 // src/utils/websocketSetup.js
 const WebSocket = require("ws");
-const { broadcastLastWorkerMessage } = require("./broadcast");
-const { saveMessageToCache } = require("./redisCache");
+const { saveMessageToCache, getMessagesFromCache } = require("./redisCache");
+const { validateMessage } = require("./validator");
 const logger = require("./logger");
 
 let projectClientsMap = {}; // Mapeia projectId para uma lista de objetos { ws, type }
@@ -39,11 +39,14 @@ function setupWebSocketServer(server) {
       }
 
       const parsedMessage = JSON.parse(message);
+
       logger.info(`Mensagem JSON parseada: ${JSON.stringify(parsedMessage)}`);
 
       if (parsedMessage.action === "getMessages") {
         subscribedProjectId = parsedMessage.projectId;
         subscribedType = parsedMessage.type || "worker"; // Tipo padrão é 'worker' se não especificado
+        const page = parsedMessage.page || 1;
+        const limit = parsedMessage.limit || 10;
 
         // Associa o cliente ao projeto e tipo
         if (!projectClientsMap[subscribedProjectId]) {
@@ -58,28 +61,55 @@ function setupWebSocketServer(server) {
           `Cliente registrado para o projeto ${subscribedProjectId}, tipo ${subscribedType}. Total de clientes: ${projectClientsMap[subscribedProjectId].length}`
         );
 
-        // Envia a última mensagem do tipo solicitado para o cliente
-        await broadcastLastWorkerMessage(
+        // Recupera múltiplas mensagens do cache com paginação
+        const start = (page - 1) * limit;
+        const end = start + limit - 1;
+        const messages = await getMessagesFromCache(
           subscribedProjectId,
-          projectClientsMap,
-          subscribedType
+          subscribedType,
+          start,
+          end
+        );
+
+        // Envia as mensagens recuperadas para o cliente
+        ws.send(
+          JSON.stringify({
+            success: true,
+            messages: messages,
+          })
         );
       } else if (
         parsedMessage.type === "worker" ||
-        parsedMessage.type === "process_nfes"
+        parsedMessage.type === "process_nfes" ||
+        parsedMessage.type === "report"
       ) {
-        // Processa e salva mensagens do tipo 'worker' ou 'process_nfes'
-        await saveMessageToCache(parsedMessage);
-        logger.info(
-          `Mensagem de ${parsedMessage.type} salva no cache para o projeto ${parsedMessage.projectId}`
-        );
+        try {
+          // Valida a mensagem usando o validador
+          validateMessage(parsedMessage);
 
-        // Transmite a última mensagem armazenada para clientes interessados
-        await broadcastLastWorkerMessage(
-          parsedMessage.projectId,
-          projectClientsMap,
-          parsedMessage.type
-        );
+          // Processa e salva mensagens
+          await saveMessageToCache(parsedMessage);
+          logger.info(
+            `Mensagem de ${parsedMessage.type} salva no cache para o projeto ${parsedMessage.projectId}`
+          );
+
+          // Transmite a mensagem para os clientes inscritos
+          broadcastMessageToClients(
+            parsedMessage.projectId,
+            parsedMessage.type,
+            parsedMessage
+          );
+        } catch (validationError) {
+          logger.error(
+            `Erro de validação da mensagem: ${validationError.message}`
+          );
+          ws.send(
+            JSON.stringify({
+              success: false,
+              error: `Erro de validação: ${validationError.message}`,
+            })
+          );
+        }
       } else {
         logger.warn(
           `Ação não reconhecida ou tipo de mensagem não suportado: ${
@@ -118,6 +148,19 @@ function setupWebSocketServer(server) {
   });
 
   return wss;
+}
+
+// Nova função para transmitir mensagens aos clientes inscritos
+function broadcastMessageToClients(projectId, messageType, message) {
+  const clientsForProject = projectClientsMap[projectId] || [];
+  clientsForProject.forEach((clientObj) => {
+    if (
+      clientObj.type === messageType &&
+      clientObj.ws.readyState === WebSocket.OPEN
+    ) {
+      clientObj.ws.send(JSON.stringify({ success: true, message }));
+    }
+  });
 }
 
 module.exports = { setupWebSocketServer };

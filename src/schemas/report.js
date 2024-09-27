@@ -1,15 +1,13 @@
 // src/schemas/report.js
-const reportSchema = {
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["report"] },
-    nfe: { type: "string" },
-    dhEvento: { type: "string", format: "date-time" },
-    cnpj: { type: "string" },
-    status: { type: "string" },
-    projectId: { type: "string" },
-  },
-  required: ["type", "nfe", "dhEvento", "cnpj", "status", "projectId"],
-};
+const Joi = require("joi");
+
+const reportSchema = Joi.object({
+  type: Joi.string().valid("report").required(),
+  nfe: Joi.string().required(),
+  dhEvento: Joi.date().iso().required(),
+  cnpj: Joi.string().required(),
+  status: Joi.string().required(),
+  projectId: Joi.string().required(),
+});
 
 module.exports = reportSchema;

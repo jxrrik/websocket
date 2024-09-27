@@ -1,7 +1,7 @@
 const WebSocket = require("ws");
 
 // Conectando ao servidor WebSocket
-const ws = new WebSocket("ws://localhost:9002/ws");
+const ws = new WebSocket("wss://log.vidal-app.com/ws");
 
 // Quando a conexão é estabelecida
 ws.on("open", () => {

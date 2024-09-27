@@ -3,7 +3,7 @@ const Redis = require("ioredis");
 const redis = new Redis();
 const logger = require("./logger");
 
-const MAX_MESSAGES_PER_TYPE = 50;
+const MAX_MESSAGES_PER_TYPE = 200;
 
 const saveMessageToCache = async (message) => {
   try {
@@ -20,20 +20,6 @@ const saveMessageToCache = async (message) => {
       messageType: message.type,
       projectId: message.projectId,
     });
-
-    // Verificação para debugging
-    const savedMessages = await redis.lrange(key, 0, 0);
-    if (savedMessages.length > 0) {
-      const savedMessage = JSON.parse(savedMessages[0]);
-      logger.info(
-        `Verificação: Última mensagem no cache: ${JSON.stringify(savedMessage)}`
-      );
-    } else {
-      logger.warn(
-        `Verificação: Nenhuma mensagem encontrada no cache após salvar`,
-        { messageType: message.type, projectId: message.projectId }
-      );
-    }
   } catch (error) {
     logger.error("Erro ao salvar mensagem no cache", {
       error: error.message,
@@ -72,4 +58,19 @@ const getLastMessage = async (projectId, type) => {
   }
 };
 
-module.exports = { saveMessageToCache, getLastMessage };
+const getMessagesFromCache = async (projectId, type, start, end) => {
+  try {
+    const key = `websocketMessages:${type}:${projectId}`;
+    const messages = await redis.lrange(key, start, end);
+    return messages.map((message) => JSON.parse(message));
+  } catch (error) {
+    logger.error("Erro ao recuperar as mensagens do cache", {
+      error: error.message,
+      stack: error.stack,
+      projectId,
+    });
+    throw error;
+  }
+};
+
+module.exports = { saveMessageToCache, getLastMessage, getMessagesFromCache };

@@ -1,35 +1,21 @@
-const workerSchema = {
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["worker"] },
-    workerId: { type: "string" },
-    status: { type: "number", minimum: 0 },
-    progress: {
-      type: "object",
-      properties: {
-        current: { type: "number", minimum: 0 },
-        total: { type: "number", minimum: 0 },
-      },
-      required: ["current", "total"],
-    },
-    details: {
-      type: "object",
-      properties: {
-        totalFiles: { type: "number", minimum: 0 },
-        downloaded: { type: "number", minimum: 0 },
-        downloadRate: { type: "number", minimum: 0 },
-        estimatedCompletion: { type: "string" },
-      },
-      required: [
-        "totalFiles",
-        "downloaded",
-        "downloadRate",
-        "estimatedCompletion",
-      ],
-    },
-    projectId: { type: "string" },
-  },
-  required: ["type", "workerId", "status", "progress", "details", "projectId"],
-};
+// src/schemas/worker.js
+const Joi = require("joi");
+
+const workerSchema = Joi.object({
+  type: Joi.string().valid("worker").required(),
+  workerId: Joi.string().required(),
+  status: Joi.number().min(0).required(),
+  progress: Joi.object({
+    current: Joi.number().min(0).required(),
+    total: Joi.number().min(0).required(),
+  }).required(),
+  details: Joi.object({
+    totalFiles: Joi.number().min(0).required(),
+    downloaded: Joi.number().min(0).required(),
+    downloadRate: Joi.number().min(0).required(),
+    estimatedCompletion: Joi.string().required(),
+  }).required(),
+  projectId: Joi.string().required(),
+});
 
 module.exports = workerSchema;

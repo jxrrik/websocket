@@ -1,8 +1,10 @@
+// src/middleware/authMiddleware.js
 const axios = require("axios");
 
 const validateToken = async (token) => {
   try {
-    const response = await axios.get("https://api.exemplo.com/validate", {
+    // Substitua pela sua lógica de validação de token
+    const response = await axios.get("https://api.seudominio.com/validate", {
       headers: { Authorization: `Bearer ${token}` },
     });
     return response.data.isValid;

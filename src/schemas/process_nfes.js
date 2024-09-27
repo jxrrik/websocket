@@ -1,16 +1,14 @@
 // src/schemas/process_nfes.js
-const processNfesSchema = {
-  type: "object",
-  properties: {
-    type: { type: "string", enum: ["process_nfes"] },
-    data: { type: "string", format: "date-time" },
-    desc: { type: "string" },
-    files: { type: "number", minimum: 0 },
-    reports: { type: "number", minimum: 0 },
-    erros: { type: "number", minimum: 0 },
-    projectId: { type: "string" },
-  },
-  required: ["type", "data", "desc", "files", "reports", "erros", "projectId"],
-};
+const Joi = require("joi");
+
+const processNfesSchema = Joi.object({
+  type: Joi.string().valid("process_nfes").required(),
+  data: Joi.date().iso().required(),
+  desc: Joi.string().required(),
+  files: Joi.number().min(0).required(),
+  reports: Joi.number().min(0).required(),
+  erros: Joi.number().min(0).required(),
+  projectId: Joi.string().required(),
+});
 
 module.exports = processNfesSchema;
