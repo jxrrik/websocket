@@ -31,33 +31,6 @@ const saveMessageToCache = async (message) => {
   }
 };
 
-const getLastMessage = async (projectId, type) => {
-  try {
-    const key = `websocketMessages:${type}:${projectId}`;
-    const messages = await redis.lrange(key, 0, 0); // Recupera apenas a última mensagem
-    if (messages.length === 0) {
-      logger.warn(`Nenhuma mensagem encontrada para o projeto ${projectId}`, {
-        type,
-      });
-      return null;
-    }
-
-    const lastMessage = JSON.parse(messages[0]);
-    logger.info(
-      `Última mensagem do tipo '${type}' recuperada do Redis para o projeto ${projectId}: ${JSON.stringify(
-        lastMessage
-      )}`
-    );
-    return lastMessage;
-  } catch (error) {
-    logger.error("Erro ao buscar a última mensagem", {
-      error: error.message,
-      projectId,
-    });
-    throw error;
-  }
-};
-
 const getMessagesFromCache = async (projectId, type, start, end) => {
   try {
     const key = `websocketMessages:${type}:${projectId}`;
@@ -73,4 +46,4 @@ const getMessagesFromCache = async (projectId, type, start, end) => {
   }
 };
 
-module.exports = { saveMessageToCache, getLastMessage, getMessagesFromCache };
+module.exports = { saveMessageToCache, getMessagesFromCache };

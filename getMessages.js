@@ -10,16 +10,14 @@ ws.on("open", () => {
 
   const requestMessage = {
     action: "getMessages",
-    type: "process_nfes", // Alterado para 'process_nfes'
-    projectId: "644c2e39f64a4dcb4d65d58b", // Usando o projectId das mensagens enviadas
+    type: "process_reports", // Certifique-se de que este é o tipo correto
+    projectId: "639903d1e193693c0d03e01f", // Usando o projectId das mensagens enviadas
     page: 1,
     limit: 10,
   };
 
   ws.send(JSON.stringify(requestMessage));
-  console.log(
-    "Requisição para buscar mensagens do tipo 'process_nfes' enviada."
-  );
+  console.log("Requisição para buscar mensagens enviada.");
 });
 
 // Receber a resposta do servidor WebSocket

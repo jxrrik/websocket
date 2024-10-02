@@ -64,12 +64,19 @@ function setupWebSocketServer(server) {
         // Recupera múltiplas mensagens do cache com paginação
         const start = (page - 1) * limit;
         const end = start + limit - 1;
+
+        logger.info(
+          `Recuperando mensagens do cache para key: websocketMessages:${subscribedType}:${subscribedProjectId}`
+        );
+
         const messages = await getMessagesFromCache(
           subscribedProjectId,
           subscribedType,
           start,
           end
         );
+
+        logger.info(`Mensagens recuperadas: ${JSON.stringify(messages)}`);
 
         // Envia as mensagens recuperadas para o cliente
         ws.send(
@@ -81,6 +88,7 @@ function setupWebSocketServer(server) {
       } else if (
         parsedMessage.type === "worker" ||
         parsedMessage.type === "process_nfes" ||
+        parsedMessage.type === "process_reports" || // Adicionado
         parsedMessage.type === "report"
       ) {
         try {
@@ -89,6 +97,7 @@ function setupWebSocketServer(server) {
 
           // Processa e salva mensagens
           await saveMessageToCache(parsedMessage);
+
           logger.info(
             `Mensagem de ${parsedMessage.type} salva no cache para o projeto ${parsedMessage.projectId}`
           );
@@ -150,7 +159,7 @@ function setupWebSocketServer(server) {
   return wss;
 }
 
-// Nova função para transmitir mensagens aos clientes inscritos
+// Função para transmitir mensagens aos clientes inscritos
 function broadcastMessageToClients(projectId, messageType, message) {
   const clientsForProject = projectClientsMap[projectId] || [];
   clientsForProject.forEach((clientObj) => {
